@@ -118,7 +118,7 @@ export class IndexedDBDatabase implements LocalDatabase {
         /* Listening to the success event, and passing the item value if found, null otherwise */
         const success = (fromEvent(request, 'success') as Observable<Event>).pipe(
           map((event) => (event.target as IDBRequest).result),
-          map((result) => result && (this.dataPath in result) ? (result[this.dataPath] as T) : null)
+          map((result) => (result !== undefined) ? (result as T) : null)
         );
 
         /* Merging success and errors events and autoclosing the observable */
@@ -168,11 +168,11 @@ export class IndexedDBDatabase implements LocalDatabase {
             /* Adding or updating local storage, based on previous checking */
             switch (method) {
               case 'add':
-                request = transaction.add({ [this.dataPath]: data }, key);
+                request = transaction.add(data, key);
                 break;
               case 'put':
               default:
-                request = transaction.put({ [this.dataPath]: data }, key);
+                request = transaction.put(data, key);
                 break;
             }
 

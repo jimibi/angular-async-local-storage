@@ -695,7 +695,7 @@ describe('LocalStorage with IndexedDB', () => {
 
         localStorageObject.get(index).addEventListener('success', (requestEvent) => {
 
-          expect((requestEvent.target as IDBRequest).result).toEqual({ value });
+          expect((requestEvent.target as IDBRequest).result).toEqual(value);
 
           done();
 
