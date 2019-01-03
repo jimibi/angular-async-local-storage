@@ -43,12 +43,6 @@ function testGetItemObject<T>(localStorageService: LocalStorage, value: T, done:
 
 function tests(localStorageService: LocalStorage) {
 
-  beforeEach((done: DoneFn) => {
-    localStorageService.clear().subscribe(() => {
-      done();
-    });
-  });
-
   it('should return null on unknown index', (done: DoneFn) => {
 
     localStorageService.getItem('unknown').subscribe((data) => {
@@ -667,6 +661,12 @@ describe('LocalStorage with mock storage', () => {
 
   const localStorageService = new LocalStorage(new MockLocalDatabase(), new JSONValidator());
 
+  beforeEach((done: DoneFn) => {
+    localStorageService.clear().subscribe(() => {
+      done();
+    });
+  });
+
   tests(localStorageService);
 
 });
@@ -675,6 +675,10 @@ describe('LocalStorage with localStorage', () => {
 
   const localStorageService = new LocalStorage(new LocalStorageDatabase(), new JSONValidator());
 
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   tests(localStorageService);
 
 });
@@ -682,6 +686,12 @@ describe('LocalStorage with localStorage', () => {
 describe('LocalStorage with IndexedDB', () => {
 
   const localStorageService = new LocalStorage(new IndexedDBDatabase(), new JSONValidator());
+
+  beforeEach((done: DoneFn) => {
+    localStorageService.clear().subscribe(() => {
+      done();
+    });
+  });
 
   tests(localStorageService);
 
@@ -712,9 +722,7 @@ describe('LocalStorage with IndexedDB', () => {
 
   });
 
-  function testSetCompatibilityWithNativeAPI(done: DoneFn, value: any) {
-
-    const index = 'test';
+  function storeWithNativeApi(index: string, value: any, callback: Function) {
 
     indexedDB.open('ngStorage').addEventListener('success', (openEvent) => {
 
@@ -724,11 +732,7 @@ describe('LocalStorage with IndexedDB', () => {
 
       localStorageObject.add(value, index).addEventListener('success', () => {
 
-        localStorageService.setItem(index, 'world').subscribe(() => {
-
-          done();
-
-        });
+        callback();
 
       });
 
@@ -736,20 +740,71 @@ describe('LocalStorage with IndexedDB', () => {
 
   }
 
-  it('should store a value on an index previously used by a native or other lib API', (done: DoneFn) => {
+  function testSetCompatibilityWithNativeAPI(done: DoneFn, value: any) {
 
-    testSetCompatibilityWithNativeAPI(done, 'hello');
-    testSetCompatibilityWithNativeAPI(done, '');
-    testSetCompatibilityWithNativeAPI(done, 0);
-    testSetCompatibilityWithNativeAPI(done, false);
-    testSetCompatibilityWithNativeAPI(done, null);
-    testSetCompatibilityWithNativeAPI(done, undefined);
+    const index = 'test';
 
-  });
+    storeWithNativeApi(index, value, () => {
+
+      localStorageService.setItem(index, 'world').subscribe(() => {
+
+        done();
+
+      });
+
+    });
+
+  }
+
+  function testGetCompatibilityWithNativeAPI(done: DoneFn, value: any) {
+
+    const index = 'test';
+
+    storeWithNativeApi(index, value, () => {
+
+      localStorageService.getItem(index).subscribe((result) => {
+
+        expect(result).toEqual((value !== undefined) ? value : null);
+
+        done();
+
+      });
+
+    });
+
+  }
+
+  const setTestValues = ['hello', '', 0, false, null, undefined];
+
+  for (const setTestValue of setTestValues) {
+
+    it('should store a value on an index previously used by a native or other lib API', (done: DoneFn) => {
+
+      testSetCompatibilityWithNativeAPI(done, setTestValue);
+
+    });
+
+  }
+
+  const getTestValues = ['hello', '', 1, 0, true, false, null, undefined, [1, 2, 3], { test: 'value' }];
+
+  for (const getTestValue of getTestValues) {
+
+    it('should get a value on an index previously used by a native or other lib API', (done: DoneFn) => {
+
+      testGetCompatibilityWithNativeAPI(done, getTestValue);
+
+    });
+
+  }
 
 });
 
 describe('LocalStorage with localStorage and a prefix', () => {
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
 
   it('should have the wanted prefix', () => {
 
@@ -793,6 +848,12 @@ describe('LocalStorage with IndexedDB and a prefix', () => {
   });
 
   const localStorageService = new LocalStorage(new IndexedDBDatabase('myapp'), new JSONValidator());
+
+  beforeEach((done: DoneFn) => {
+    localStorageService.clear().subscribe(() => {
+      done();
+    });
+  });
 
   tests(localStorageService);
 
